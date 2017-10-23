@@ -1,0 +1,193 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+
+```{r}
+
+#load in all these libraries
+
+
+library(ggplot2)
+library(gdata)
+library(dplyr)
+library(lubridate)
+library(scales)
+library(tidyr)
+library(DT)
+library(ggthemes)
+library(ggmap)
+```
+
+
+
+
+
+---
+title: "Final Project"
+output: html_document
+---
+
+```{r}
+
+
+library(gdata)
+
+
+#read in each csv file, and then bind it into a massive data frame
+
+mydata1 <- read.csv("uber-raw-data-apr14.csv")
+mydata2 <- read.csv("uber-raw-data-aug14.csv")
+mydata3 <- read.csv("uber-raw-data-jul14.csv")
+mydata4 <- read.csv("uber-raw-data-jun14.csv")
+mydata5 <- read.csv("uber-raw-data-may14.csv")
+mydata6 <- read.csv("uber-raw-data-sep14.csv")
+
+alldata <- rbind(mydata1, mydata2, mydata3, mydata4, mydata5, mydata6)
+
+
+
+
+
+```
+
+
+
+```{r}
+#properly parse out the date and time, and save each relevent piece of the data to a new column
+
+alldata$Date.Time <- as.POSIXct(alldata$Date.Time, format = "%m/%d/%Y %H:%M:%S")
+
+alldata$Time <- format(as.POSIXct(alldata$Date.Time, format = "%m/%d/%Y %H:%M:%S"), format="%H:%M:%S")
+
+alldata$Date.Time <- ymd_hms(alldata$Date.Time)
+
+
+alldata$day <- factor(day(alldata$Date.Time))
+alldata$month <- factor(month(alldata$Date.Time, label = TRUE))
+alldata$year <- factor(year(alldata$Date.Time))
+alldata$dayofweek <- factor(wday(alldata$Date.Time, label = TRUE))
+
+alldata$hour <- factor(hour(hms(alldata$Time)))
+alldata$minute <- factor(minute(hms(alldata$Time)))
+alldata$second <- factor(second(hms(alldata$Time)))
+
+```
+
+
+
+
+```{r}
+#plot of all overall number of rides for the months we have data for
+ggplot(data = alldata) +
+  geom_bar(mapping = aes(x=month)) +
+  ggtitle("Trips by Month") 
+
+
+```
+```{r}
+#plot of number of trips by hour
+
+ggplot(data = alldata) +
+  geom_bar(mapping = aes(x=hour)) +
+  ggtitle("Trips by hour") 
+
+```
+
+```{r}
+#plot of number of trips by the day of the week
+
+ggplot(data = alldata) +
+  geom_bar(mapping = aes(x=dayofweek)) +
+  ggtitle("Trips by day of week") 
+
+```
+
+
+
+```{r}
+#combined visual looking at day of the week and time of day. This reveals a bimodal distribution for some days
+
+
+  ggplot(data = alldata) +
+  geom_bar(mapping = aes(x=hour)) +
+  ggtitle("Trips by day of week by hour") +
+  facet_wrap(~dayofweek, ncol = 2) +
+  scale_x_discrete(breaks=seq(0,24,2))
+
+```
+
+
+
+
+
+
+```{r}
+#add the count of entries for each month to the data frame
+alldata$weights <- ""
+alldata$weights[alldata$month=="Apr"] <- nrow(mydata1)
+alldata$weights[alldata$month=="Aug"] <- nrow(mydata2)
+alldata$weights[alldata$month=="Jul"] <- nrow(mydata3)
+alldata$weights[alldata$month=="Jun"] <- nrow(mydata4)
+alldata$weights[alldata$month=="May"] <- nrow(mydata5)
+alldata$weights[alldata$month=="Sep"] <- nrow(mydata6)
+
+
+
+```
+
+```{r}
+#sample a portion of the data in proportion to the count of pickups for that month
+set.seed(300)
+sampledata <- alldata %>% sample_n(size = 10000, weight = as.numeric(weights))
+```
+
+```{r}
+#draw the map with a sample of the pickup points
+
+library(ggmap)
+bbox <- make_bbox(c(-74.05,-73.8), c(40.68, 40.82), f = 0.01)
+map <- get_map(bbox)
+
+mapPoints <- ggmap(map) +
+   geom_point(data = sampledata,  size = 1, stroke = 0, shape = 16, alpha = .3, aes(x = Lon, y = Lat), show.legend = FALSE)
+
+mapPoints
+
+```
+
+```{r}
+
+#Map for party evenings, Thurs-Saturday nights
+
+partyevenings <- sampledata %>%
+filter(dayofweek %in% c("Thurs", "Fri", "Sat") & hour %in% c(21, 22, 23))
+
+
+
+mapPoints <- ggmap(map) +
+   geom_point(data = partyevenings,  size = 2 , stroke = 0, shape = 16, alpha = .4, aes(x = Lon, y = Lat), show.legend = FALSE)
+
+mapPoints
+
+```
+
+```{r}
+
+
+#Draw the map for workday mornings, Mon-Wed 6-8 AM
+
+
+workmornings <- sampledata %>%
+filter(dayofweek %in% c("Mon", "Tues", "Wed") & hour %in% c(6, 7, 8))
+
+
+
+mapPoints <- ggmap(map) +
+   geom_point(data = workmornings,  size = 2 , stroke = 0, shape = 16, alpha = .4, aes(x = Lon, y = Lat), show.legend = FALSE)
+
+mapPoints
+
+```
+

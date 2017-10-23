@@ -1,0 +1,15 @@
+---
+title: "README"
+output: html_document
+---
+## Final Project
+
+
+
+In this repo you will find:
+
+A lab notebook, titled, Final Project_writeup. This contains text for the abstract, introduction, methods, results and conclusion sections as well as all code used during analysis.
+
+Data files are uploaded to Kaggle as they are too big to be stored on github. These files can be accessed here https://www.kaggle.com/fivethirtyeight/uber-pickups-in-new-york-city 
+
+Data Dictionary - Variable names and discriptions of data used
